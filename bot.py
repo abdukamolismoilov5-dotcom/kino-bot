@@ -1005,23 +1005,25 @@ def maybe_start_cloud_server():
 
 
 if __name__ == "__main__":
-    try:
-        maybe_start_cloud_server()
-        me = bot.get_me()
+    maybe_start_cloud_server()
+    while True:
         try:
-            bot.set_my_commands([
-                telebot.types.BotCommand("start", "🎬 Kino kodini kiritish"),
-            ])
-        except Exception:
-            pass
-        print("\n" + "=" * 65)
-        print(f"✅ VIP KINO BOT MUVAFFAQIYATLI ISHGA TUSHDI!")
-        print(f"🤖 Bot nomi: {me.first_name} (@{me.username})")
-        print(f"📡 Majburiy obuna kanali: https://t.me/kinolar_botttt")
-        print(f"🎬 Bazadagi tayyor kinolar: {len(get_all_movies())} ta")
-        print(f"🔐 Admin panelga kirish: Botga /admin yoki admin/ deb yozing")
-        print(f"🔑 Admin paroli: {get_setting('admin_password', 'abdu8811')}")
-        print("=" * 65 + "\n")
-        bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=True)
-    except Exception as e:
-        print(f"\n❌ Xatolik yuz berdi: {e}")
+            me = bot.get_me()
+            try:
+                bot.set_my_commands([
+                    telebot.types.BotCommand("start", "🎬 Kino kodini kiritish"),
+                ])
+            except Exception:
+                pass
+            print("\n" + "=" * 65)
+            print(f"✅ VIP KINO BOT MUVAFFAQIYATLI ISHGA TUSHDI!")
+            print(f"🤖 Bot nomi: {me.first_name} (@{me.username})")
+            print(f"📡 Majburiy obuna kanali: https://t.me/kinolar_botttt")
+            print(f"🎬 Bazadagi tayyor kinolar: {len(get_all_movies())} ta")
+            print(f"🔐 Admin panelga kirish: Botga /admin yoki admin/ deb yozing")
+            print(f"🔑 Admin paroli: {get_setting('admin_password', 'abdu8811')}")
+            print("=" * 65 + "\n")
+            bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=False)
+        except Exception as e:
+            print(f"⚠️ Polling xatolik yuz berdi (5 soniyada qayta urinadi): {e}")
+            time.sleep(5)
