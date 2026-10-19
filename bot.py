@@ -984,21 +984,24 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"OK - @kinolarr_olami_bot is running 24/7!\n")
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
     def log_message(self, format, *args):
         pass
 
 
 def maybe_start_cloud_server():
     port_str = os.environ.get("PORT", "").strip()
-    if port_str:
-        try:
-            port = int(port_str)
-            server = HTTPServer(("0.0.0.0", port), HealthHandler)
-            t = threading.Thread(target=server.serve_forever, daemon=True)
-            t.start()
-            print(f"🌐 Cloud Healthcheck server port {port} da ishga tushdi.")
-        except Exception as e:
-            print(f"⚠️ Healthcheck serverni ishga tushirishda xatolik: {e}")
+    port = int(port_str) if port_str.isdigit() else 10000
+    try:
+        server = HTTPServer(("0.0.0.0", port), HealthHandler)
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+        print(f"🌐 Cloud Healthcheck server port {port} da ishga tushdi.")
+    except Exception as e:
+        print(f"⚠️ Healthcheck serverni ishga tushirishda xatolik: {e}")
 
 
 if __name__ == "__main__":
@@ -1019,6 +1022,6 @@ if __name__ == "__main__":
         print(f"🔐 Admin panelga kirish: Botga /admin yoki admin/ deb yozing")
         print(f"🔑 Admin paroli: {get_setting('admin_password', 'abdu8811')}")
         print("=" * 65 + "\n")
-        bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=False)
+        bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=True)
     except Exception as e:
         print(f"\n❌ Xatolik yuz berdi: {e}")
