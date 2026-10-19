@@ -286,16 +286,22 @@ def send_protected_movie(chat_id: int, movie: dict):
             pass
 
     demo_path = ensure_demo_video()
-    with open(demo_path, "rb") as vf:
-        sent = bot.send_video(
-            chat_id=chat_id,
-            video=vf,
-            caption=caption,
-            protect_content=True,
-            supports_streaming=True,
-        )
-        if sent and sent.video:
-            set_setting("demo_file_id", sent.video.file_id)
+    if os.path.exists(demo_path):
+        try:
+            with open(demo_path, "rb") as vf:
+                sent = bot.send_video(
+                    chat_id=chat_id,
+                    video=vf,
+                    caption=caption,
+                    protect_content=True,
+                    supports_streaming=True,
+                )
+                if sent and sent.video:
+                    set_setting("demo_file_id", sent.video.file_id)
+        except Exception:
+            bot.send_message(chat_id, caption)
+    else:
+        bot.send_message(chat_id, caption)
 
 
 # ================= KANALGA KINO KODINI CHIQARISH (POST QILISH) =================
