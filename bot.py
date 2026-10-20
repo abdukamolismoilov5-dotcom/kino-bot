@@ -973,57 +973,93 @@ def execute_broadcast(message):
     )
 
 
+import json
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
-class HealthHandler(BaseHTTPRequestHandler):
+class CloudServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain; charset=utf-8")
         self.end_headers()
-        self.wfile.write(b"OK - @kinolarr_olami_bot is running 24/7!\n")
+        self.wfile.write(b"OK - @kinolarr_olami_bot is running 24/7 on Render!\n")
 
     def do_HEAD(self):
         self.send_response(200)
         self.end_headers()
 
+    def do_POST(self):
+        if self.path.startswith("/webhook"):
+            length = int(self.headers.get("content-length", 0))
+            body = self.rfile.read(length).decode("utf-8")
+            try:
+                update = telebot.types.Update.de_json(json.loads(body))
+                if update:
+                    bot.process_new_updates([update])
+            except Exception as e:
+                print(f"⚠️ Webhook update xatolik: {e}")
+            self.send_response(200)
+            self.end_headers()
+        else:
+            self.send_response(404)
+            self.end_headers()
+
     def log_message(self, format, *args):
         pass
 
 
-def maybe_start_cloud_server():
+if __name__ == "__main__":
     port_str = os.environ.get("PORT", "").strip()
     port = int(port_str) if port_str.isdigit() else 10000
+    webhook_url = os.environ.get("WEBHOOK_URL", "").strip().rstrip("/")
+    if not webhook_url and os.environ.get("RENDER"):
+        webhook_url = "https://kino-bot-s6um.onrender.com"
+
+    me = bot.get_me()
     try:
-        server = HTTPServer(("0.0.0.0", port), HealthHandler)
-        t = threading.Thread(target=server.serve_forever, daemon=True)
-        t.start()
-        print(f"🌐 Cloud Healthcheck server port {port} da ishga tushdi.")
-    except Exception as e:
-        print(f"⚠️ Healthcheck serverni ishga tushirishda xatolik: {e}")
+        bot.set_my_commands([
+            telebot.types.BotCommand("start", "🎬 Kino kodini kiritish"),
+        ])
+    except Exception:
+        pass
+    print("\n" + "=" * 65)
+    print(f"✅ VIP KINO BOT MUVAFFAQIYATLI ISHGA TUSHDI!")
+    print(f"🤖 Bot nomi: {me.first_name} (@{me.username})")
+    print(f"📡 Majburiy obuna kanali: https://t.me/kinolar_botttt")
+    print(f"🎬 Bazadagi tayyor kinolar: {len(get_all_movies())} ta")
+    print(f"🔐 Admin panelga kirish: Botga /admin yoki admin/ deb yozing")
+    print(f"🔑 Admin paroli: {get_setting('admin_password', 'abdu8811')}")
+    print("=" * 65 + "\n")
 
-
-if __name__ == "__main__":
-    maybe_start_cloud_server()
-    while True:
+    if webhook_url:
+        full_webhook = f"{webhook_url}/webhook"
+        print(f"🌐 Webhook rejimi faollashmoqda: {full_webhook}")
         try:
-            me = bot.get_me()
-            try:
-                bot.set_my_commands([
-                    telebot.types.BotCommand("start", "🎬 Kino kodini kiritish"),
-                ])
-            except Exception:
-                pass
-            print("\n" + "=" * 65)
-            print(f"✅ VIP KINO BOT MUVAFFAQIYATLI ISHGA TUSHDI!")
-            print(f"🤖 Bot nomi: {me.first_name} (@{me.username})")
-            print(f"📡 Majburiy obuna kanali: https://t.me/kinolar_botttt")
-            print(f"🎬 Bazadagi tayyor kinolar: {len(get_all_movies())} ta")
-            print(f"🔐 Admin panelga kirish: Botga /admin yoki admin/ deb yozing")
-            print(f"🔑 Admin paroli: {get_setting('admin_password', 'abdu8811')}")
-            print("=" * 65 + "\n")
-            bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=False)
+            bot.remove_webhook()
+            time.sleep(0.5)
+            bot.set_webhook(url=full_webhook, drop_pending_updates=False)
+            print("✅ Webhook Telegramga muvaffaqiyatli ulandi!")
         except Exception as e:
-            print(f"⚠️ Polling xatolik yuz berdi (5 soniyada qayta urinadi): {e}")
-            time.sleep(5)
+            print(f"⚠️ Webhook o'rnatishda xatolik: {e}")
+
+        print(f"🚀 Webhook HTTP server port {port} da tinglamoqda...")
+        server = HTTPServer(("0.0.0.0", port), CloudServerHandler)
+        server.serve_forever()
+    else:
+        # Lokal kompyuterda (Polling rejimida)
+        try:
+            bot.remove_webhook()
+        except Exception:
+            pass
+        try:
+            server = HTTPServer(("0.0.0.0", port), CloudServerHandler)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+        except Exception:
+            pass
+        while True:
+            try:
+                bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=False)
+            except Exception as e:
+                print(f"⚠️ Polling xatolik yuz berdi (5 soniyada qayta urinadi): {e}")
+                time.sleep(5)
